@@ -1,7 +1,7 @@
 /// <reference path="typings/tsd.d.ts" />
+/// <reference path="interfaces/interfaces.d.ts" />
 
-import searchForShow = require("./lib/searchForShow");
-import inspectShow = require("./lib/inspectShow");
-import inspectEpisode = require("./lib/inspectEpisode");
-import downloadSubtitle = require("./lib/downloadSubtitle");
+import ripper = require("./lib/ripper");
+import cli = require("./lib/cli");
 
+export = ripper;

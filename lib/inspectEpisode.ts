@@ -3,11 +3,7 @@ var cheerio = require("cheerio");
 
 function inspectEpisode(opts: {
   id: number
-}, callback?: (err, res?: {subtitles: {
-  id: number,
-  name: string,
-  lng: string
-}[]}) => void) {
+}, callback?: (err, res?: Ripper.inspectEpisode.res) => void) {
   function dataReceived(body) {
     var $ = cheerio.load(body);
     var list = $(".subtitlen");

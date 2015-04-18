@@ -8,9 +8,7 @@ function searchForShow(
     name: string,
     exactMatch?: boolean
   },
-  callback: (err, res?: {
-    shows: {id: number, name: string}[]
-  }) => void
+  callback: (err, res?: Ripper.searchForShow.res) => void
 ) {
   function dataReceived(body) {
     var $ = cheerio.load(body);

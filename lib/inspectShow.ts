@@ -1,19 +1,15 @@
 var http = require("http");
 var cheerio = require("cheerio");
 
+export = inspectShow;
+
 function inspectShow(
   opts: {
     id: number,
     season?: number,
     episode?: number
   },
-  callback: (err, res?: {episodes: {
-    id: number,
-    episodeNumber: number,
-    name: string,
-    amount: number,
-    season: number
-  }[]}) => void
+  callback: (err, res?: Ripper.inspectShow.res) => void
 ) {
   var season = opts.season;
 
@@ -80,4 +76,4 @@ function inspectShow(
   });
 }
 
-export = inspectShow;
+

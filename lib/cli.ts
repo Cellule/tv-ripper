@@ -105,11 +105,30 @@ function rip() {
       var selectedShow: Ripper.searchForShow.show;
       if(res.shows.length === 1 || cliArgs.quiet) {
         selectedShow = res.shows[0];
+        next(null, selectedShow);
+      } else {
+        var nShows = res.shows.length;
+        function selectShow() {
+          console.log("Available Shows:\n%s", res.shows.map(function(show, i) {
+            return (i + 1) + ": " + show.name;
+          }).join("\n"))
+          prompt.get("choice", function(err, pRes) {
+            var i = parseInt(pRes.choice)|0;
+            if( ((i - 1) >>> 0) > nShows) {
+              console.error("Invalid Choice");
+              return selectShow();
+            }
+            next(null, res.shows[i - 1]);
+          })
+        }
       }
+      selectShow();
+    },
+    (selectedShow: Ripper.searchForShow.show, next) => {
       // Save show for later
       savedInfo.show = selectedShow;
 
-      console.log("Found tv show", selectedShow.name);
+      console.log("Selected tv show", selectedShow.name);
       subtitles.inspectShow({
         id: selectedShow.id,
         // if season is not defined, this will return the latest season

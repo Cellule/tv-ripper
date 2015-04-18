@@ -12,8 +12,11 @@ declare module Ripper {
   }
 
   module searchForShow {
+    export interface show {
+      id: number, name: string
+    }
     export interface res {
-      shows: {id: number, name: string}[]
+      shows: show[]
     }
   }
 

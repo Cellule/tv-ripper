@@ -42,7 +42,7 @@ function inspectShow(
 
     if(opts.episode) {
       episodes = episodes.filter(function(episode) {
-        return episode.episodeNumber === opts.episode;
+        return episode.episodeNumber === opts.episode && episode.amount;
       });
     }
 

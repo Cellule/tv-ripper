@@ -2,7 +2,8 @@ var http = require("http");
 var cheerio = require("cheerio");
 
 function inspectEpisode(opts: {
-  id: number
+  id: number,
+  language?: string
 }, callback?: (err, res?: Ripper.inspectEpisode.res) => void) {
   function dataReceived(body) {
     var $ = cheerio.load(body);
@@ -14,7 +15,11 @@ function inspectEpisode(opts: {
         lng: /Download (.*) subtitles/.exec($(elem).attr("title"))[1]
       }
     }).get();
-
+    if(opts.language) {
+      subtitles = subtitles.filter(function(sub) {
+        return sub.lng.toLowerCase() === opts.language.toLowerCase();
+      })
+    }
     callback(
       subtitles.length ? null: new Error("No subtitles found"),
       {

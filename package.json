@@ -1,0 +1,24 @@
+{
+  "name": "tv-ripper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "built/index.js",
+  "scripts": {
+    "test": "where eslint-myrules",
+    "lint": "eslint-myrules lint",
+    "build": "tsc",
+    "start": "npm run build&&node built/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint-myrules": "git://github.com/cellule/eslint-myrules.git",
+    "eslint-myrules-manager": "^0.1.5"
+  },
+  "dependencies": {
+    "cheerio": "^0.19.0",
+    "request": "^2.55.0",
+    "streamifier": "^0.1.1",
+    "unzip": "^0.1.11"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  targets: {
+    global: ["index.ts"]
+  },
+  extraRules: {
+    global: {
+      parser: "esprima"
+    }
+  }
+}

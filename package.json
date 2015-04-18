@@ -4,7 +4,7 @@
   "description": "",
   "main": "built/index.js",
   "bin": {
-    "tv-ripper": "bin/cli"
+    "tv-ripper": "bin/tv-ripper"
   },
   "scripts": {
     "test": "where eslint-myrules",

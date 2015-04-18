@@ -46,7 +46,7 @@ function inspectShow(
       });
     }
 
-    callback(!episodes.length ? null: new Error("No episodes found"),
+    callback(episodes.length ? null: new Error("No episodes found"),
       {
         episodes: episodes
       }

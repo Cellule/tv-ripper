@@ -16,7 +16,7 @@ function inspectEpisode(opts: {
     }).get();
 
     callback(
-      !subtitles.length ? null: new Error("No subtitles found"),
+      subtitles.length ? null: new Error("No subtitles found"),
       {
         subtitles: subtitles
       }

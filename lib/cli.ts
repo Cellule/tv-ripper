@@ -37,6 +37,7 @@ prompt.get({
     (res: Ripper.searchForShow.res, next) => {
       showId = res.shows[0].id;
       showName = res.shows[0].name;
+      console.log("Found tv show", showName);
       subtitles.inspectShow({
         id: showId,
         season: promptResult.season
@@ -57,11 +58,16 @@ prompt.get({
         });
         return;
       }
-      next([res]);
+      next(null, [res]);
     },
     (allEpisodes: Ripper.inspectShow.res[], next) => {
       async.each(allEpisodes, (episodes, done) => {
         async.each(episodes.episodes, (episode, done) => {
+          if(!episode.amount) {
+            // skip this episode
+            return done();
+          }
+          console.log("Found episode", episode.name);
           subtitles.inspectEpisode({
             id: episode.id
           }, (err, res: Ripper.inspectEpisode.res) => {
@@ -70,10 +76,12 @@ prompt.get({
             }
             async.each(res.subtitles, (sub, done) => {
               if(!promptResult.language || promptResult.language === sub.lng) {
+                var outputPath = path.join(output, showName, "Season " + episode.season);
+                console.log("Downloading subtitle %s at %s", sub.name, outputPath);
                 subtitles.downloadSubtitle({
                   id: sub.id,
-                  path: path.join(output, showName, "Season " + episode.season)
-                });
+                  path: outputPath
+                }, done);
                 return;
               }
               done();
@@ -83,6 +91,10 @@ prompt.get({
       }, next);
     }
   ], err => {
-    console.error(err);
+    if(err) {
+      console.error(err);
+    } else {
+      console.log("Success");
+    }
   })
 })

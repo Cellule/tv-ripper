@@ -14,8 +14,6 @@ function searchForShow(
     var $ = cheerio.load(body);
     var list = $(".left_articles ul li div a");
     var shows = list.map(function(i, elem) {
-      // todo:: prompt user to make a choice.
-      //console.log($(elem).text());
       return {
         id: parseInt(/^\/tvshow-(\d+)/.exec(elem.attribs.href)[1]),
         name: $(elem).text()
@@ -26,7 +24,7 @@ function searchForShow(
         return show.name.match(new RegExp("^" + opts.name + " \(.*\)$", "i"));
       });
     }
-    callback(!shows.length ? null: new Error("No result found"), {
+    callback(shows.length ? null: new Error("No tv show found"), {
       shows: shows
     });
   }

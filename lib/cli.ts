@@ -39,7 +39,10 @@ if(!cliArgs.language) {
     message: 'No language specified, are you sure you want to continue?',
     validator: /y[es]*|n[o]?/,
     warning: 'Must respond yes or no',
-    default: 'no'
+    default: 'no',
+    before: function(val) {
+      return val[0] === "y";
+    }
   }, function(err, result) {
     if(err || !result.yesno) {
       process.exit(0);
@@ -54,8 +57,10 @@ interface SavedInfo {
   show?: Ripper.searchForShow.show;
   downloaded: {
     [language: string]: {
-      [season: string]: {
-        [episode: string]: boolean;
+      [season: number]: {
+        [episode: number]: {
+          [subId: number]: boolean
+        };
       }
     }
   }
@@ -70,15 +75,17 @@ function rip() {
     //do nothing
   }
   savedInfo.downloaded = savedInfo.downloaded || {};
-  function isSubtitleSaved(lng, season, episode) {
+  function isSubtitleSaved(lng, season, episode, subId) {
     return savedInfo.downloaded[lng] &&
       savedInfo.downloaded[lng][season] &&
-      savedInfo.downloaded[lng][season][episode];
+      savedInfo.downloaded[lng][season][episode] &&
+      savedInfo.downloaded[lng][season][episode][subId];
   }
-  function saveSubtitle(lng, season, episode) {
+  function saveSubtitle(lng, season, episode, subId) {
     savedInfo.downloaded[lng] = savedInfo.downloaded[lng] || {};
     savedInfo.downloaded[lng][season] = savedInfo.downloaded[lng][season] || {}
-    savedInfo.downloaded[lng][season][episode] = true;
+    savedInfo.downloaded[lng][season][episode] = savedInfo.downloaded[lng][season][episode] || {};
+    savedInfo.downloaded[lng][season][episode][subId] = true;
   }
   var output = process.cwd();
 
@@ -86,7 +93,7 @@ function rip() {
     // Search the show or use saved info
     next => {
       if(savedInfo.show) {
-        return next(null, { episodes: [savedInfo.show] });
+        return next(null, { shows: [savedInfo.show] });
       }
       subtitles.searchForShow({
         name: cliArgs.name,
@@ -106,7 +113,8 @@ function rip() {
       subtitles.inspectShow({
         id: selectedShow.id,
         // if season is not defined, this will return the latest season
-        season: cliArgs.season > 0 ? cliArgs.season: undefined
+        season: cliArgs.season > 0 ? cliArgs.season: undefined,
+        episode: cliArgs.episode
       }, next);
     },
     // If no season was specified, search for all other seasons
@@ -116,7 +124,8 @@ function rip() {
         async.map(_.range(1, season), (season, next) => {
           subtitles.inspectShow({
             id: savedInfo.show.id,
-            season: season
+            season: season,
+            episode: cliArgs.episode
           }, next);
         }, (err, allEpisodes) => {
           allEpisodes = allEpisodes || [];
@@ -147,7 +156,8 @@ function rip() {
                   isSubtitleSaved(
                     sub.lng,
                     episode.season,
-                    episode.episodeNumber
+                    episode.episodeNumber,
+                    sub.id
                   )
                 ) {
                   console.info("Skipping cached subtitle %s", sub.name);
@@ -157,7 +167,8 @@ function rip() {
               saveSubtitle(
                 sub.lng,
                 episode.season,
-                episode.episodeNumber
+                episode.episodeNumber,
+                sub.id
               );
               var outputPath = path.join(output, "Season " + episode.season);
               console.log("Downloading subtitle %s at %s", sub.name, outputPath);
@@ -175,7 +186,9 @@ function rip() {
       console.error(err);
     } else {
       if(cliArgs.save) {
-        fs.writeFileSync(savedInfoFilename, JSON.stringify(savedInfo));
+        var dst = path.join(process.cwd(), savedInfoFilename);
+        console.log("Saving downloaded subtitles at %s", dst)
+        fs.writeFileSync(dst, JSON.stringify(savedInfo));
       }
       console.log("Success");
     }

@@ -30,4 +30,5 @@ bower_components
 
 # Intermediary files
 built
+test
 *.sublime-workspace

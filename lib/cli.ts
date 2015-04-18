@@ -121,8 +121,8 @@ function rip() {
             next(null, res.shows[i - 1]);
           })
         }
+        selectShow();
       }
-      selectShow();
     },
     (selectedShow: Ripper.searchForShow.show, next) => {
       // Save show for later
@@ -166,7 +166,9 @@ function rip() {
             language: cliArgs.language
           }, (err, res: Ripper.inspectEpisode.res) => {
             if(err) {
-              return nextEpisode(err);
+              console.error("No subtitle found for episode %s", episode.name);
+              // Show error, but keep going.
+              return nextEpisode();
             }
             // download the subtitles
             async.each(res.subtitles, (sub, nextSub) => {
@@ -201,14 +203,14 @@ function rip() {
       }, next);
     }
   ], err => {
+    if(cliArgs.save) {
+      var dst = path.join(process.cwd(), savedInfoFilename);
+      console.log("Saving downloaded subtitles at %s", dst)
+      fs.writeFileSync(dst, JSON.stringify(savedInfo));
+    }
     if(err) {
       console.error(err);
     } else {
-      if(cliArgs.save) {
-        var dst = path.join(process.cwd(), savedInfoFilename);
-        console.log("Saving downloaded subtitles at %s", dst)
-        fs.writeFileSync(dst, JSON.stringify(savedInfo));
-      }
       console.log("Success");
     }
   })

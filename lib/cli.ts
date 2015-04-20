@@ -31,6 +31,16 @@ program
   .parse(process.argv)
 
 prompt.start();
+prompt.properties.yesno = {
+  name: 'yesno',
+  validator: /y[es]*|n[o]?/,
+  warning: 'Must respond yes or no',
+  default: 'no',
+  before: function(val) {
+    return val[0] === "y";
+  }
+}
+
 var cliArgs: CliArguments = <any>program;
 
 rip();
@@ -43,6 +53,7 @@ interface SavedInfo {
         [episode: number]: {
           [subId: number]: boolean
         };
+        completed?: boolean;
       }
     }
   }
@@ -57,29 +68,56 @@ function rip() {
     //do nothing
   }
   savedInfo.downloaded = savedInfo.downloaded || {};
-  function isSubtitleSaved(lng, season, episode, subId) {
+  function isSubtitleSaved(lng: string, season: number, episode: number, subId: number) {
     return savedInfo.downloaded[lng] &&
       savedInfo.downloaded[lng][season] &&
       savedInfo.downloaded[lng][season][episode] &&
       savedInfo.downloaded[lng][season][episode][subId];
   }
-  function saveSubtitle(lng, season, episode, subId) {
+  function saveSubtitle(lng: string, season: number, episode: number, subId: number) {
     savedInfo.downloaded[lng] = savedInfo.downloaded[lng] || {};
     savedInfo.downloaded[lng][season] = savedInfo.downloaded[lng][season] || {}
     savedInfo.downloaded[lng][season][episode] = savedInfo.downloaded[lng][season][episode] || {};
     savedInfo.downloaded[lng][season][episode][subId] = true;
   }
+  function markSeasonCompleted(lng: string, season: number, unmark?: boolean) {
+    savedInfo.downloaded[lng] = savedInfo.downloaded[lng] || {};
+    savedInfo.downloaded[lng][season] = savedInfo.downloaded[lng][season] || {}
+    savedInfo.downloaded[lng][season].completed = unmark ? false : true;
+  }
+  function isSeasonCompleted(lng: string, season: number) {
+    return savedInfo.downloaded[lng] &&
+      savedInfo.downloaded[lng][season] &&
+      savedInfo.downloaded[lng][season].completed;
+  }
   var output = process.cwd();
 
   if(
-    (!savedInfo || !savedInfo.show) &&
+    !savedInfo.show &&
     typeof cliArgs.name !== "string"
   ) {
     // No tv show selected. Use current directory name
     cliArgs.name = path.basename(output);
   }
 
+
+
   async.waterfall([
+    // Check if the selected season is already marked as completed
+    next => {
+      if(cliArgs.season && isSeasonCompleted(cliArgs.language, cliArgs.season)) {
+        console.log("Selected season is marked as completed. Do you want to download it again?");
+        prompt.get("yesno", function(errPrompt, result) {
+          if(!errPrompt && result.yesno) {
+            markSeasonCompleted(cliArgs.language, cliArgs.season, true);
+            return next();
+          }
+          next(errPrompt || new Error("Nothing to download"));
+        });
+        return;
+      }
+      next();
+    },
     // Search the show or use saved info
     next => {
       if(savedInfo.show) {
@@ -128,22 +166,32 @@ function rip() {
     },
     // If no season was specified, search for all other seasons
     (res: Ripper.inspectShow.res, next) => {
+      var allSeasons = [];
+      if(!isSeasonCompleted(cliArgs.language, res.seasonNumber)) {
+        allSeasons.push(res);
+      } else {
+        console.log("Skipping completed season %d", res.seasonNumber);
+      }
       if(cliArgs.season === undefined) {
-        var season = res.episodes[0].season;
+        console.log("Searching for all seasons");
+        var season = res.seasonNumber;
         async.map(_.range(1, season), (season, next) => {
+          if(isSeasonCompleted(cliArgs.language, season)) {
+            console.log("Skipping completed season %d", season);
+            return next(null, null);
+          }
           subtitles.inspectShow({
             id: savedInfo.show.id,
             season: season,
             episode: cliArgs.episode
           }, next);
         }, (err, allEpisodes) => {
-          allEpisodes = allEpisodes || [];
-          allEpisodes.push(res);
-          next(err, allEpisodes);
+          allSeasons = allSeasons.concat(_.compact(allEpisodes))
+          next(err, allSeasons);
         });
         return;
       }
-      next(null, [res]);
+      next(null, allSeasons);
     },
     // Inspect all the shows and download the desired subtitles
     (seasons: Ripper.inspectShow.res[], next) => {
@@ -196,7 +244,19 @@ function rip() {
               });
             }, nextEpisode);
           })
-        }, nextSeason);
+        }, function(err) {
+          if(!err) {
+            console.log("Would you like to mark season %d as complete?", season.seasonNumber);
+            prompt.get("yesno", function(errPrompt, result) {
+              if(!errPrompt && result.yesno) {
+                markSeasonCompleted(cliArgs.language, season.seasonNumber);
+              }
+              nextSeason(err);
+            })
+          } else {
+            nextSeason(err);
+          }
+        });
       }, next);
     }
   ], err => {

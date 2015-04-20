@@ -20,7 +20,7 @@ Usage: tv-ripper [options]
     -n, --name <tvShow>   tv show name
     -s, --season <n>      Optional. Season you want to download. Select '0' for latest only. Omit to download all seasons
     -e, --episode <n>     Optional. Episode you want to download
-    -l, --language <lng>  Required. Subtitle language [English, French, ...]
+    -l, --language <lng>  Required. Subtitle language. Default: English
     -q, --quiet           won't prompt you when multiple choices available
     -f, --force           Download already downloaded subtitles as well
     -r, --no-save         Save information for tv show and downloaded subtitles so far to avoid duplicates

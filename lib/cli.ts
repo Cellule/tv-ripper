@@ -24,34 +24,16 @@ program
   .option("-n, --name <tvShow>", "tv show name")
   .option("-s, --season <n>", "Optional. Season you want to download. Select '0' for latest only. Omit to download all seasons", parseInt)
   .option("-e, --episode <n>", "Optional. Episode you want to download", parseInt)
-  .option("-l, --language <lng>", "Required. Subtitle language [English, French, ...]")
+  .option("-l, --language <lng>", "Required. Subtitle language. Default: English", "English")
   .option("-q, --quiet", "won't prompt you when multiple choices available")
   .option("-f, --force", "Download already downloaded subtitles as well")
-  .option("-r, --no-save", "Save information for tv show and downloaded subtitles so far to avoid duplicates")
+  .option("--no-save", "Save information for tv show and downloaded subtitles so far to avoid duplicates")
   .parse(process.argv)
 
 prompt.start();
 var cliArgs: CliArguments = <any>program;
 
-if(!cliArgs.language) {
-  prompt.get({
-    name: 'yesno',
-    message: 'No language specified, are you sure you want to continue?',
-    validator: /y[es]*|n[o]?/,
-    warning: 'Must respond yes or no',
-    default: 'no',
-    before: function(val) {
-      return val[0] === "y";
-    }
-  }, function(err, result) {
-    if(err || !result.yesno) {
-      process.exit(0);
-    }
-    rip();
-  })
-} else {
-  rip();
-}
+rip();
 
 interface SavedInfo {
   show?: Ripper.searchForShow.show;
@@ -88,6 +70,14 @@ function rip() {
     savedInfo.downloaded[lng][season][episode][subId] = true;
   }
   var output = process.cwd();
+
+  if(
+    (!savedInfo || !savedInfo.show) &&
+    typeof cliArgs.name !== "string"
+  ) {
+    // No tv show selected. Use current directory name
+    cliArgs.name = path.basename(output);
+  }
 
   async.waterfall([
     // Search the show or use saved info
@@ -157,7 +147,7 @@ function rip() {
     },
     // Inspect all the shows and download the desired subtitles
     (seasons: Ripper.inspectShow.res[], next) => {
-      async.each(seasons, (season, nextSeason) => {
+      async.eachSeries(seasons, (season, nextSeason) => {
         async.each(season.episodes, (episode, nextEpisode) => {
           console.log("Found episode", episode.name);
           // check the subtitles for this episode
@@ -185,18 +175,25 @@ function rip() {
                   return nextSub();
                 }
               }
-              saveSubtitle(
-                sub.lng,
-                episode.season,
-                episode.episodeNumber,
-                sub.id
-              );
               var outputPath = path.join(output, "Season " + episode.season);
               console.log("Downloading subtitle %s at %s", sub.name, outputPath);
               subtitles.downloadSubtitle({
                 id: sub.id,
                 path: outputPath
-              }, nextSub);
+              }, function(err) {
+                if(!err) {
+                  saveSubtitle(
+                    sub.lng,
+                    episode.season,
+                    episode.episodeNumber,
+                    sub.id
+                  );
+                } else {
+                  console.error("Error downloading subtitle %s. %j", sub.name, err);
+                }
+                // Ignore the error and continue, it will simply not save and try again next time.
+                nextSub();
+              });
             }, nextEpisode);
           })
         }, nextSeason);

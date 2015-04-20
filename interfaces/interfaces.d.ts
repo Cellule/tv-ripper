@@ -7,7 +7,8 @@ declare module Ripper {
         name: string,
         amount: number,
         season: number
-      }[]
+      }[];
+      seasonNumber: number;
     }
   }
 

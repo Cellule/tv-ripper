@@ -1,16 +1,15 @@
 {
   "name": "tv-ripper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "built/index.js",
   "bin": {
     "tv-ripper": "bin/tv-ripper"
   },
   "scripts": {
-    "test": "where eslint-myrules",
     "lint": "eslint-myrules lint",
     "build": "tsc",
-    "start": "npm run build&&node built/index.js"
+    "prepublish": "npm run build"
   },
   "author": "",
   "license": "ISC",

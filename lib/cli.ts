@@ -51,7 +51,8 @@ interface SavedInfo {
     [language: string]: {
       [season: number]: {
         [episode: number]: {
-          [subId: number]: boolean
+          [subId: number]: boolean;
+          completed?: boolean;
         };
         completed?: boolean;
       }
@@ -90,6 +91,18 @@ function rip() {
       savedInfo.downloaded[lng][season] &&
       savedInfo.downloaded[lng][season].completed;
   }
+  function markEpisodeCompleted(lng: string, season: number, episode: number, unmark?: boolean) {
+    savedInfo.downloaded[lng] = savedInfo.downloaded[lng] || {};
+    savedInfo.downloaded[lng][season] = savedInfo.downloaded[lng][season] || {}
+    savedInfo.downloaded[lng][season][episode] = savedInfo.downloaded[lng][season][episode] || {}
+    savedInfo.downloaded[lng][season][episode].completed = unmark ? false : true;
+  }
+  function isEpisodeCompleted(lng: string, season: number, episode: number) {
+    return savedInfo.downloaded[lng] &&
+      savedInfo.downloaded[lng][season] &&
+      savedInfo.downloaded[lng][season][episode] &&
+      savedInfo.downloaded[lng][season][episode].completed;
+  }
   var output = process.cwd();
 
   if(
@@ -97,7 +110,9 @@ function rip() {
     typeof cliArgs.name !== "string"
   ) {
     // No tv show selected. Use current directory name
-    cliArgs.name = path.basename(output);
+    cliArgs.name = path.basename(output)
+      // Remove the year in parenthesis
+      .replace(/\(\d+(-\d+)?\)/, "");
   }
 
 
@@ -167,7 +182,7 @@ function rip() {
     // If no season was specified, search for all other seasons
     (res: Ripper.inspectShow.res, next) => {
       var allSeasons = [];
-      if(!isSeasonCompleted(cliArgs.language, res.seasonNumber)) {
+      if(cliArgs.force || !isSeasonCompleted(cliArgs.language, res.seasonNumber)) {
         allSeasons.push(res);
       } else {
         console.log("Skipping completed season %d", res.seasonNumber);
@@ -176,7 +191,7 @@ function rip() {
         console.log("Searching for all seasons");
         var season = res.seasonNumber;
         async.map(_.range(1, season), (season, next) => {
-          if(isSeasonCompleted(cliArgs.language, season)) {
+          if(cliArgs.force || isSeasonCompleted(cliArgs.language, season)) {
             console.log("Skipping completed season %d", season);
             return next(null, null);
           }
@@ -197,6 +212,18 @@ function rip() {
     (seasons: Ripper.inspectShow.res[], next) => {
       async.eachSeries(seasons, (season, nextSeason) => {
         async.each(season.episodes, (episode, nextEpisode) => {
+          if(!cliArgs.force && isEpisodeCompleted(
+            cliArgs.language,
+            season.seasonNumber,
+            episode.episodeNumber
+          )) {
+            console.log(
+              "Skipping episode %dx%d",
+              season.seasonNumber,
+              episode.episodeNumber
+            );
+            return nextEpisode();
+          }
           console.log("Found episode", episode.name);
           // check the subtitles for this episode
           subtitles.inspectEpisode({
@@ -204,7 +231,11 @@ function rip() {
             language: cliArgs.language
           }, (err, res: Ripper.inspectEpisode.res) => {
             if(err) {
-              console.error("No subtitle found for episode %s", episode.name);
+              console.error(
+                "No subtitle found for episode %dx%d",
+                season.seasonNumber,
+                episode.episodeNumber
+              );
               // Show error, but keep going.
               return nextEpisode();
             }
@@ -242,7 +273,12 @@ function rip() {
                 // Ignore the error and continue, it will simply not save and try again next time.
                 nextSub();
               });
-            }, nextEpisode);
+            }, err => {
+              if(!err) {
+                markEpisodeCompleted(cliArgs.language, season.seasonNumber, episode.episodeNumber);
+              }
+              nextEpisode(err);
+            });
           })
         }, function(err) {
           if(!err) {

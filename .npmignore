@@ -1,0 +1,6 @@
+/lib
+/interfaces
+/typings
+tsd.json
+tsconfig.json
+*.sublime*

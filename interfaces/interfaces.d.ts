@@ -36,4 +36,25 @@ declare module Ripper {
 
     }
   }
+
+  export interface SavedInfoData {
+    show?: Ripper.searchForShow.show;
+    imdbId?: string;
+    currentSeason?: number;
+    currentEpisode?: number;
+    imdbTitle?: string;
+
+    downloaded: {
+      [language: string]: {
+        [season: number]: {
+          [episode: number]: {
+            [subId: number]: boolean;
+            completed?: boolean;
+          };
+          completed?: boolean;
+        }
+      }
+    }
+  }
 }
+

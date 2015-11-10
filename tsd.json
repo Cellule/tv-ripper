@@ -6,7 +6,7 @@
   "bundle": "typings/tsd.d.ts",
   "installed": {
     "node/node.d.ts": {
-      "commit": "52fa2b9ce36f2c5843204e9bfbaada7cded9b47a"
+      "commit": "8c4ec896ab619e7cb6572f82423e6e1eece70f5a"
     },
     "async/async.d.ts": {
       "commit": "52fa2b9ce36f2c5843204e9bfbaada7cded9b47a"
@@ -16,6 +16,12 @@
     },
     "commander/commander.d.ts": {
       "commit": "52fa2b9ce36f2c5843204e9bfbaada7cded9b47a"
+    },
+    "superagent/superagent.d.ts": {
+      "commit": "8c4ec896ab619e7cb6572f82423e6e1eece70f5a"
+    },
+    "mkdirp/mkdirp.d.ts": {
+      "commit": "8c4ec896ab619e7cb6572f82423e6e1eece70f5a"
     }
   }
 }

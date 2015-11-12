@@ -54,7 +54,7 @@ export function addNewTvShow(name: string, info: SavedInfo, callback: (err) => v
             const cancel = err || !res.yesno;
             next(!cancel ? null : new Error("Operation canceled by user"), {
               Title: `${info.data.currentSeason}-${info.data.currentEpisode}`,
-              IsRelease: () => true
+              IsReleased: () => true
             });
           });
           return;
@@ -141,7 +141,13 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
     },
     (res: torrents.KickAssTorrentInfo[], next) => {
       if(res.length == 0) {
-        return next(new Error("No torrent found"));
+        console.log("No torrent found");
+        console.log("Do you want to skip this episode?");
+        prompt.get("noyes", (err, res) => {
+          const cancel = err || !res.noyes;
+          next(!cancel ? new Error("skip") : new Error("Not Skipping the episode, exiting."));
+        });
+        return;
       }
       const selectEpisode = function(n: number) {
         let iShow = 0;
@@ -155,14 +161,23 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
         const showLess = n > 5;
         const showMore = nShown < res.length;
         if(showLess) {
-          console.log(`l: show less`);
+          console.log(`l: Show less`);
         }
         if(showMore) {
-          console.log(`m: show more`);
+          console.log(`m: Show more`);
         }
+        console.log(`s: Skip this episode`);
         prompt.get("choice", function(err, pRes) {
           if(err) {
             return next(err);
+          }
+          if(pRes.choice === "s") {
+            console.log("Do you want to skip this episode?");
+            prompt.get("noyes", (err, res) => {
+              const cancel = err || !res.noyes;
+              next(!cancel ? new Error("skip") : new Error("Not Skipping the episode, exiting."));
+            });
+            return;
           }
           if(showLess && pRes.choice === "l") {
             return selectEpisode(n - 5);
@@ -205,6 +220,9 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
       torrents.startTorrent(res, downloadDestination, next);
     }
   ], err => {
+    if(err.message === "skip") {
+      err = null;
+    }
     console.log(err || "Success");
     if(!err) {
       info.data.currentSeason = season;

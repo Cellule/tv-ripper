@@ -22,6 +22,7 @@ interface CliArguments {
   quiet: boolean;
   save: boolean;
   force: boolean;
+  list: boolean;
   args: string[];
 }
 
@@ -36,6 +37,7 @@ program
   .option("-l, --language <lng>", "Required. Subtitle language. Default: English", "English")
   .option("-q, --quiet", "won't prompt you when multiple choices available")
   .option("-f, --force", "Download already downloaded subtitles as well")
+  .option("--list", "List subfolder with tv-ripper info")
   .option("--no-save", "Save information for tv show and downloaded subtitles so far to avoid duplicates")
   .parse(process.argv)
 
@@ -252,6 +254,33 @@ function rip(showName: string, info: SavedInfo, callback) {
 
 
 var cliArgs: CliArguments = <any>program;
+if(cliArgs.list) {
+  const currentDir = process.cwd();
+  const customFolders = cliArgs.args.length > 0;
+  const content = customFolders ?
+    cliArgs.args.map(folder => path.resolve(folder)) :
+    fs.readdirSync(currentDir).map(folder => path.join(currentDir, folder));
+  content.forEach(folderPath => {
+    const stat = fs.statSync(folderPath);
+      if (stat.isDirectory()) {
+        const info = new SavedInfo(folderPath);
+        if (info.loaded) {
+          const hasVidInfo = !!info.data.imdbTitle;
+          const hasSubInfo = !!info.data.show;
+          console.log(folderPath);
+          console.log(`- TvShow ready: ${hasVidInfo}`);
+          console.log(`- SubTitle ready: ${hasSubInfo}`);
+        } else {
+          console.log(`${folderPath} is not a tvRipper folder`);
+        }
+      } else {
+        console.log(`${folderPath} is not a folder`);
+      }
+  })
+
+  process.exit(0);
+}
+
 if(!cliArgs.sub && !cliArgs.vid) {
   cliArgs.sub = true;
   cliArgs.vid = true;

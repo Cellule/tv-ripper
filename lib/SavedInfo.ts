@@ -11,21 +11,23 @@ class SavedInfo {
 
   constructor(folder: string) {
     const savedInfoFilename = "tvRipper.json";
-    this.folder = folder;
+    this.folder = path.resolve(folder);
     try {
       const stat = fs.statSync(this.folder);
       if(!stat.isDirectory()) {
-        throw new Error(`Path ${folder} is not a directory`);
+        throw new Error(`Path ${this.folder} is not a directory`);
       }
     } catch(e) {
     }
-    this.savedInfoPath = path.join(folder, savedInfoFilename);
+    this.savedInfoPath = path.join(this.folder, savedInfoFilename);
+    //console.log(`Trying to load saved info at ${this.savedInfoPath}`);
     try {
       this.data = require(this.savedInfoPath);
       this.loaded = true;
     } catch (e) {
       //do nothing
     }
+    //console.log(`${this.folder}: TvRipper ${this.loaded ? "": "not "}loaded`)
     this.data.downloaded = this.data.downloaded || {};
   }
   saveToFile() {

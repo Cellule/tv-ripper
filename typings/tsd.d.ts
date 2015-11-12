@@ -4,3 +4,4 @@
 /// <reference path="commander/commander.d.ts" />
 /// <reference path="superagent/superagent.d.ts" />
 /// <reference path="mkdirp/mkdirp.d.ts" />
+/// <reference path="js-beautify/js-beautify.d.ts" />

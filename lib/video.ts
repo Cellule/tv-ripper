@@ -6,7 +6,7 @@ import torrents = require("./torrents");
 import path = require("path");
 import mkdirp = require("mkdirp");
 
-export function addNewTvShow(name: string, destination: string, info: SavedInfo) {
+export function addNewTvShow(name: string, info: SavedInfo, callback: (err) => void) {
   let imdbShow: imdb.ShowSearchRes;
   async.waterfall([
     next => {
@@ -25,13 +25,13 @@ export function addNewTvShow(name: string, destination: string, info: SavedInfo)
       prompt.get({
         properties: {
           season: {
-            description: "Which season do you want to start downloading?",
+            description: "Last downloaded season?",
             default: 1,
             type: "number"
           },
           episode: {
-            description: "Which episode do you want to start downloading?",
-            default: 1,
+            description: "Last downloaded episode?",
+            default: 0,
             type: "number"
           }
         }
@@ -42,13 +42,37 @@ export function addNewTvShow(name: string, destination: string, info: SavedInfo)
       info.data.currentSeason = res.season;
       info.data.imdbId = imdbShow.imdbID;
       info.data.imdbTitle = imdbShow.Title;
-
+      if(info.data.currentEpisode == 0) {
+        return next(null, null);
+      }
       // Search for the episode to make sure it exists
-      imdb.searchEpisode(imdbShow.Title, res.season, res.episode, next);
+      imdb.searchEpisode(imdbShow.Title, res.season, res.episode, (err, res) => {
+        if(err) {
+          console.log(err);
+          console.log("Continue anyway?");
+          prompt.get("yesno", (err, res) => {
+            const cancel = err || !res.yesno;
+            next(!cancel ? null : new Error("Operation canceled by user"), {
+              Title: `${info.data.currentSeason}-${info.data.currentEpisode}`,
+              IsRelease: () => true
+            });
+          });
+          return;
+        }
+        next(null, res);
+      });
     },
     (res: imdb.EpisodeSearchRes, next) => {
-      if (res.Released === "N/A" || new Date(res.Released) > new Date()) {
-          return next(new Error("Episode has not been released yet"));
+      if(res === null) {
+        return next(null);
+      }
+      if (!res.IsReleased()) {
+        console.log("Episode has not been released yet");
+        console.log("Continue anyway?");
+        prompt.get("noyes", (err, res) => {
+          const cancel = err || !res.noyes;
+          next(!cancel ? null : new Error("Operation canceled by user"));
+        });
       }
       console.log(`Episode found: ${res.Title}, ${res.Released}\n  ${res.Plot}`);
       console.log("Is this the episode you were looking for?");
@@ -57,11 +81,61 @@ export function addNewTvShow(name: string, destination: string, info: SavedInfo)
         next(!cancel ? null : new Error("Operation canceled by user"));
       });
     },
+
+  ], err => {
+    console.log(err || "Success");
+    if(!err) {
+      info.saveToFile();
+    }
+    callback(err);
+  });
+}
+
+export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
+  if(typeof info.data.imdbTitle !== "string") {
+    return addNewTvShow(info.folder, info, err => {
+      if(!err) {
+        return DownloadNextEpisode(info, callback);
+      }
+      callback(err);
+    });
+  }
+
+  let season = info.data.currentSeason;
+  let episode = info.data.currentEpisode + 1;
+  let destination = info.folder;
+  async.waterfall([
     next => {
+      imdb.searchEpisode(info.data.imdbTitle, season, episode, (err, res) => {
+        if(err) {
+          console.log("Episode not found");
+          // If this episode doesn't exist, check if the next season is available
+          episode = 1;
+          season++;
+          return imdb.searchEpisode(info.data.imdbTitle, season, episode, next);
+        }
+        next(null, res);
+      });
+    },
+    (res: imdb.EpisodeSearchRes, next) => {
+      if (!res.IsReleased()) {
+        console.log("Episode has not been released yet");
+        console.log("Continue anyway?");
+        prompt.get("noyes", (err, res) => {
+          const cancel = err || !res.noyes;
+          next(!cancel ? null : new Error("Operation canceled by user"));
+        });
+        return;
+      }
+      console.log(`Episode found: ${res.Title}, ${res.Released}\n  ${res.Plot}`);
+      next();
+    },
+    next => {
+      console.log("Checking for torrents");
       torrents.SearchEpisode(
         info.data.imdbTitle,
-        info.data.currentSeason,
-        info.data.currentEpisode,
+        season,
+        episode,
         next
       );
     },
@@ -69,35 +143,74 @@ export function addNewTvShow(name: string, destination: string, info: SavedInfo)
       if(res.length == 0) {
         return next(new Error("No torrent found"));
       }
-      let i = 1;
-      console.log("Available torrents:\n0: CANCEL");
-      for(let torrent of res) {
-        console.log(`${i++}: ${torrent.title}: ${torrent.size >> 20}`);
-      }
-      const selectEpisode = function() {
+      const selectEpisode = function(n: number) {
+        let iShow = 0;
+        console.log("Available torrents:\nc: CANCEL");
+        while(iShow < n && iShow < res.length) {
+          let torrent = res[iShow];
+          console.log(`${iShow}: ${torrent.title}: ${torrent.size >>> 20}MB`);
+          ++iShow;
+        }
+        const nShown = iShow;
+        const showLess = n > 5;
+        const showMore = nShown < res.length;
+        if(showLess) {
+          console.log(`l: show less`);
+        }
+        if(showMore) {
+          console.log(`m: show more`);
+        }
         prompt.get("choice", function(err, pRes) {
           if(err) {
             return next(err);
           }
-          let i = parseInt(pRes.choice) | 0;
-          if(i == 0) {
+          if(showLess && pRes.choice === "l") {
+            return selectEpisode(n - 5);
+          }
+          if(showMore && pRes.choice === "m") {
+            return selectEpisode(n + 5);
+          }
+          if(pRes.choice === "c") {
             return next(new Error("Operation canceled by user"));
           }
-          if (((i - 1) >>> 0) > res.length) {
+          let i = parseInt(pRes.choice) | 0;
+          if(i === 0 && pRes.choice !== "0") {
             console.error("Invalid Choice");
-            return selectEpisode();
+            return selectEpisode(n);
           }
-          next(null, res[i - 1]);
+          if ((i >>> 0) < nShown) {
+            var torrent = res[i];
+            console.log("You selected");
+            console.log(`${torrent.title}: ${torrent.size >>> 20}MB`);
+            console.log("Are you sure?");
+            prompt.get("noyes", (err, res) => {
+              const cancel = err || !res.noyes;
+              if(cancel) {
+                return selectEpisode(n);
+              }
+              return next(null, torrent);
+            });
+            return;
+          }
+          console.error("Invalid Choice");
+          selectEpisode(n);
         });
       }
-      selectEpisode();
+      selectEpisode(5);
     },
     (res: torrents.KickAssTorrentInfo, next) => {
+        console.log(res);
       const downloadDestination = path.join(destination, `Season ${info.data.currentSeason}`);
-      //mkdirp.sync(downloadDestination);
+      mkdirp.sync(downloadDestination);
       torrents.startTorrent(res, downloadDestination, next);
     }
   ], err => {
     console.log(err || "Success");
+    if(!err) {
+      info.data.currentSeason = season;
+      info.data.currentEpisode = episode;
+      info.saveToFile();
+    }
+    callback(err);
   });
 }

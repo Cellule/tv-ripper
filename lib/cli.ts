@@ -221,8 +221,8 @@ function rip(showName: string, info: SavedInfo, callback) {
         }, function(err) {
           if (!err && !cliArgs.quiet) {
             console.log("Would you like to mark season %d as complete?", season.seasonNumber);
-            prompt.get("yesno", function(errPrompt, result) {
-              if (!errPrompt && result.yesno) {
+            prompt.get("noyes", function(errPrompt, result) {
+              if (!errPrompt && result.noyes) {
                 info.markSeasonCompleted(cliArgs.language, season.seasonNumber);
               }
               nextSeason(err);
@@ -248,7 +248,10 @@ function rip(showName: string, info: SavedInfo, callback) {
 
 
 var cliArgs: CliArguments = <any>program;
-
+if(!cliArgs.sub && !cliArgs.vid) {
+  cliArgs.sub = true;
+  cliArgs.vid = true;
+}
 {
   if (typeof cliArgs.newShow === "string") {
     if (cliArgs.args.length === 0) {
@@ -257,7 +260,9 @@ var cliArgs: CliArguments = <any>program;
     }
     const info = new SavedInfo(cliArgs.args[0]);
     if (cliArgs.vid) {
-      video.addNewTvShow(cliArgs.newShow, cliArgs.args[0], info);
+      video.addNewTvShow(cliArgs.newShow, info, () => {
+        process.exit(0);
+      });
     } else {
       rip(cliArgs.newShow, info, () => {
         process.exit(0);
@@ -275,8 +280,29 @@ var cliArgs: CliArguments = <any>program;
       const stat = fs.statSync(folderPath);
       if (stat.isDirectory()) {
         const info = new SavedInfo(folderPath);
+        function downloadSub(next) {
+          return rip(null, info, err => {
+            // continue even if an error occured
+            next();
+          });
+        }
+        function downloadVid(next) {
+          video.DownloadNextEpisode(info, err => {
+            if(!err) {
+              // If no errors, try the next episode
+              return downloadVid(next);
+            }
+            next();
+          })
+        }
         if (info.loaded || customFolders) {
-          return rip(null, info, next);
+          var n = cliArgs.vid ? downloadVid.bind(null, next) : next;
+          if(cliArgs.sub) {
+            downloadSub(n);
+          } else {
+            n();
+          }
+          return;
         } else {
           console.log(`${folderPath} is not a tvRipper folder`);
         }

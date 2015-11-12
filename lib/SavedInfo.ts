@@ -1,5 +1,7 @@
 import fs = require("fs");
 import path = require("path");
+import mkdirp = require("mkdirp");
+var beautify = require("js-beautify");
 
 class SavedInfo {
   data: Ripper.SavedInfoData = { downloaded: {} };
@@ -10,6 +12,13 @@ class SavedInfo {
   constructor(folder: string) {
     const savedInfoFilename = "tvRipper.json";
     this.folder = folder;
+    try {
+      const stat = fs.statSync(this.folder);
+      if(!stat.isDirectory()) {
+        throw new Error(`Path ${folder} is not a directory`);
+      }
+    } catch(e) {
+    }
     this.savedInfoPath = path.join(folder, savedInfoFilename);
     try {
       this.data = require(this.savedInfoPath);
@@ -20,8 +29,13 @@ class SavedInfo {
     this.data.downloaded = this.data.downloaded || {};
   }
   saveToFile() {
+    try {
+      fs.statSync(this.folder);
+    } catch(e) {
+      mkdirp.sync(this.folder);
+    }
     console.log("Saving downloaded subtitles at %s", this.savedInfoPath)
-    fs.writeFileSync(this.savedInfoPath, JSON.stringify(this.data));
+    fs.writeFileSync(this.savedInfoPath, beautify(JSON.stringify(this.data), {indent_size: 2}));
   }
   isSubtitleSaved(lng: string, season: number, episode: number, subId: number) {
     const savedInfo = this.data;

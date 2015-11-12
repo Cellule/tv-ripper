@@ -1,6 +1,8 @@
 import request = require("superagent");
 import fs = require("fs");
+import path = require("path");
 import http = require("http");
+import child_process = require("child_process");
 
 function padNumber(n: number) {
   return n < 10 ? "0" + n : n;
@@ -65,11 +67,12 @@ function download(url, dest, cb) {
 };
 
 export function startTorrent(torrent: KickAssTorrentInfo, destination: string, callback: (err?) => void) {
-  const torrentFile = `${torrent.title}.torrent`;
+  const torrentFile = path.resolve(`${process.env.appdata}\\utorrent\\${torrent.title}.torrent`);
   download(torrent.torrentLink, torrentFile, err => {
     if(err) {
       return callback(err);
     }
+    child_process.exec(`${process.env.appdata}\\utorrent\\utorrent.exe /DIRECTORY "${destination}" "${torrentFile}"`);
     callback();
   });
 }

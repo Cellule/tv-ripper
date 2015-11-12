@@ -59,6 +59,7 @@ export interface EpisodeSearchRes {
   seriesID: string;
   Type: string;
   Response: string;
+  IsReleased: () => boolean;
 }
 
 function QueryOmdb(query, callback) {
@@ -99,6 +100,7 @@ export function searchEpisode(
   episode: number,
   callback: (err, res?:EpisodeSearchRes) => void
 ) {
+  console.log(`Looking for ${showName} Season ${season} Episode ${episode}`);
   QueryOmdb({
     t: showName,
     season,
@@ -106,5 +108,16 @@ export function searchEpisode(
     plot: "short",
     r: "json",
     type: "series"
-  }, callback);
+  }, (err, res) => {
+    if(err) {
+      return callback(err);
+    }
+    res.IsReleased = function() {
+      if (res.Released === "N/A" || new Date(res.Released) > new Date()) {
+          return false;
+      }
+      return true;
+    }
+    callback(err, res);
+  });
 }

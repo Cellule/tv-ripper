@@ -51,7 +51,7 @@ function rip(showName: string, info: SavedInfo, callback) {
       // Remove the year in parenthesis
       .replace(/\(\d+(-\d+)?\)/, "");
   }
-
+  let lastSeason = null;
   async.waterfall([
     // Check if the selected season is already marked as completed
     next => {
@@ -127,8 +127,8 @@ function rip(showName: string, info: SavedInfo, callback) {
       }
       if (cliArgs.season === undefined) {
         console.log("Searching for all seasons");
-        var season = res.seasonNumber;
-        async.map(_.range(1, season), (season, next) => {
+        lastSeason = res.seasonNumber;
+        async.map(_.range(1, lastSeason), (season, next) => {
           if (cliArgs.force || info.isSeasonCompleted(cliArgs.language, season)) {
             console.log("Skipping completed season %d", season);
             return next(null, null);
@@ -220,16 +220,20 @@ function rip(showName: string, info: SavedInfo, callback) {
           })
         }, function(err) {
           if (!err && !cliArgs.quiet) {
-            console.log("Would you like to mark season %d as complete?", season.seasonNumber);
-            prompt.get("noyes", function(errPrompt, result) {
-              if (!errPrompt && result.noyes) {
-                info.markSeasonCompleted(cliArgs.language, season.seasonNumber);
-              }
-              nextSeason(err);
-            })
-          } else {
-            nextSeason(err);
+            if(lastSeason === null) {
+              console.log("Would you like to mark season %d as complete?", season.seasonNumber);
+              prompt.get("noyes", function(errPrompt, result) {
+                if (!errPrompt && result.noyes) {
+                  info.markSeasonCompleted(cliArgs.language, season.seasonNumber);
+                }
+                nextSeason(err);
+              });
+              return;
+            } else if(season.seasonNumber < lastSeason) {
+              info.markSeasonCompleted(cliArgs.language, season.seasonNumber);
+            }
           }
+          nextSeason(err);
         });
       }, next);
     }

@@ -91,11 +91,11 @@ export function addNewTvShow(name: string, info: SavedInfo, callback: (err) => v
   });
 }
 
-export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
+export function DownloadNextEpisode(info: SavedInfo, opts: { quiet: boolean }, callback: (err) => void) {
   if(typeof info.data.imdbTitle !== "string") {
     return addNewTvShow(info.folder, info, err => {
       if(!err) {
-        return DownloadNextEpisode(info, callback);
+        return DownloadNextEpisode(info, opts, callback);
       }
       callback(err);
     });
@@ -119,6 +119,9 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
     },
     (res: imdb.EpisodeSearchRes, next) => {
       if (!res.IsReleased()) {
+        if(opts.quiet) {
+          return next(new Error("Episode has not been released yet"));
+        }
         console.log("Episode has not been released yet");
         console.log("Continue anyway?");
         prompt.get("noyes", (err, res) => {
@@ -130,6 +133,32 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
       console.log(`Episode found: ${res.Title}, ${res.Released}\n  ${res.Plot}`);
       next();
     },
+    next => DownloadEpisode(info, season, episode, opts, next)
+  ], err => {
+    if(err && err.message === "skip") {
+      err = null;
+    }
+    console.log(err || "Success");
+    if(!err) {
+      info.data.currentSeason = season;
+      info.data.currentEpisode = episode;
+      info.saveToFile();
+    }
+    callback(err);
+  });
+}
+
+export function DownloadEpisode(
+  info: SavedInfo,
+  season: number,
+  episode: number,
+  opts: {quiet: boolean},
+  callback: (err) => void
+) {
+  const destination = info.folder;
+  console.log(`Download ${info.data.imdbTitle} Season ${season} ${episode}`);
+
+  async.waterfall([
     next => {
       console.log("Checking for torrents");
       torrents.SearchEpisode(
@@ -141,6 +170,9 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
     },
     (res: torrents.KickAssTorrentInfo[], next) => {
       if(res.length == 0) {
+        if(opts.quiet) {
+          return next(new Error("No torrent found"));
+        }
         console.log("No torrent found");
         console.log("Do you want to skip this episode?");
         prompt.get("noyes", (err, res) => {
@@ -150,6 +182,7 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
         return;
       }
       const selectEpisode = function(n: number) {
+        console.log("Prompt Select Episode");
         let iShow = 0;
         console.log("Available torrents:\nc: CANCEL");
         while(iShow < n && iShow < res.length) {
@@ -166,15 +199,24 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
         if(showMore) {
           console.log(`m: Show more`);
         }
+        console.log("d #: Show details about torrent #");
         console.log(`s: Skip this episode`);
         prompt.get("choice", function(err, pRes) {
           if(err) {
             return next(err);
           }
+          const reg = /d (\d+)/.exec(pRes.choice);
+          if(reg !== null) {
+            const i = parseInt(reg[1]);
+            if((i >>> 0) < res.length) {
+              console.log(res[i]);
+            }
+            return selectEpisode(n);
+          }
           if(pRes.choice === "s") {
             console.log("Do you want to skip this episode?");
-            prompt.get("noyes", (err, res) => {
-              const cancel = err || !res.noyes;
+            prompt.get("yesno", (err, res) => {
+              const cancel = err || !res.yesno;
               next(!cancel ? new Error("skip") : new Error("Not Skipping the episode, exiting."));
             });
             return;
@@ -198,8 +240,9 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
             console.log("You selected");
             console.log(`${torrent.title}: ${torrent.size >>> 20}MB`);
             console.log("Are you sure?");
-            prompt.get("noyes", (err, res) => {
-              const cancel = err || !res.noyes;
+            prompt.get("yesno", (err, downloadQRes) => {
+              if(err) console.error(err);
+              const cancel = err || !downloadQRes.yesno;
               if(cancel) {
                 return selectEpisode(n);
               }
@@ -220,14 +263,11 @@ export function DownloadNextEpisode(info: SavedInfo, callback: (err) => void) {
       torrents.startTorrent(res, downloadDestination, next);
     }
   ], err => {
-    if(err.message === "skip") {
+    if(err && err.message === "skip") {
       err = null;
     }
-    console.log(err || "Success");
-    if(!err) {
-      info.data.currentSeason = season;
-      info.data.currentEpisode = episode;
-      info.saveToFile();
+    if(err) {
+      console.log(err);
     }
     callback(err);
   });

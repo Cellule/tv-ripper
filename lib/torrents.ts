@@ -48,7 +48,7 @@ export function SearchEpisode(
       try {
         list = JSON.parse(res.text).list || [];
       } catch(e) {
-
+        console.log(e.message);
       }
       callback(null, list);
     });

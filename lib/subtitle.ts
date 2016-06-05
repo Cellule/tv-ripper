@@ -103,14 +103,17 @@ export function rip(
       if (opts.force || !info.isSeasonCompleted(opts.language, res.seasonNumber)) {
         allSeasons.push(res);
       } else {
-        console.log("Skipping completed season %d", res.seasonNumber);
+	    if (!opts.quiet) {
+	       console.log("Skipping completed season %d", res.seasonNumber);
+	    }
       }
       if (opts.season === undefined) {
         console.log("Searching for all seasons");
         lastSeason = res.seasonNumber;
         async.map(_.range(1, lastSeason), (season, next) => {
           if (opts.force || info.isSeasonCompleted(opts.language, season)) {
-            console.log("Skipping completed season %d", season);
+		    if (!opts.quiet)
+              console.log("Skipping completed season %d", season);
             return next(null, null);
           }
           subtitles.inspectShow({
@@ -135,11 +138,12 @@ export function rip(
             season.seasonNumber,
             episode.episodeNumber
           )) {
-            console.log(
-              "Skipping episode %dx%d",
-              season.seasonNumber,
-              episode.episodeNumber
-            );
+		    if (!opts.quiet)
+				console.log(
+				  "Skipping episode %dx%d",
+				  season.seasonNumber,
+				  episode.episodeNumber
+				);
             return nextEpisode();
           }
           console.log("Found episode", episode.name);
@@ -149,6 +153,7 @@ export function rip(
             language: opts.language
           }, (err, res: Ripper.inspectEpisode.res) => {
             if (err) {
+			  if (!opts.quiet)
               console.error(
                 "No subtitle found for episode %dx%d",
                 season.seasonNumber,
@@ -168,7 +173,8 @@ export function rip(
                     sub.id
                   )
                 ) {
-                  console.info("Skipping cached subtitle %s", sub.name);
+				  if (!opts.quiet)
+                    console.info("Skipping cached subtitle %s", sub.name);
                   return nextSub();
                 }
               }

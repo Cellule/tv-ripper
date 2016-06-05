@@ -261,7 +261,26 @@ export function DownloadEpisode(
       const downloadDestination = path.join(destination, `Season ${info.data.currentSeason}`);
       mkdirp.sync(downloadDestination);
       torrents.startTorrent(res, downloadDestination, next);
-    }
+    },
+	next => {
+		console.log("Did it work?")
+		prompt.get("yesno", (err, res) => {
+		  if (err) return next(err);
+          const worked = res.yesno;
+		  if (worked) {
+			return next();
+		  }
+		  console.log("Retry?");
+		  prompt.get("yesno", (err, res) => {
+		      if (err) return next(err);
+			  const retry = res.yesno;
+			  if (retry) {
+				return DownloadEpisode(info, season, episode, opts, next);
+			  }
+			  next();
+			});
+        });
+	}
   ], err => {
     if(err && err.message === "skip") {
       err = null;

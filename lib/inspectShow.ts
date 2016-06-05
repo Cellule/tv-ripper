@@ -53,7 +53,8 @@ function inspectShow(
       }
     );
   }
-  var url = "http://www.tvsubtitles.net/tvshow-" + opts.id;
+  var site = "http://www.tvsubtitles.net/";
+  var url = site + "tvshow-" + opts.id;
   if(opts.season) {
     url += "-" + opts.season;
   }
@@ -61,8 +62,12 @@ function inspectShow(
   http.get(url, function(res) {
     var body = "";
     if(!season) {
+	  var m = /(\d+)\.html$/.exec(res.headers.location);
+	  if (!m) {
+		return callback(new Error("Invalid URL " + site + res.headers.location));
+	  }
       // get the season number from the redirection
-      season = parseInt(/(\d+)\.html$/.exec(res.headers.location)[1]);
+      season = parseInt(m[1]);
     }
 
     res.setEncoding("utf8");

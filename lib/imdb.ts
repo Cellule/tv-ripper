@@ -1,4 +1,4 @@
-import request = require("superagent");
+import request from "superagent";
 
 export interface SeasonSearchRes {
   Title: string;

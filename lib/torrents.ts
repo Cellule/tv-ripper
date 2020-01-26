@@ -1,8 +1,7 @@
-import request = require("superagent");
-import fs = require("fs");
-import path = require("path");
-import http = require("http");
-import child_process = require("child_process");
+import request from "superagent";
+import fs from "fs";
+import path from "path";
+import child_process from "child_process";
 
 function padNumber(n: number) {
   return n < 10 ? "0" + n : n;
@@ -15,7 +14,7 @@ export interface KickAssTorrentInfo {
   guid: string;
   pubDate: string;
   torrentLink: string;
-  hash: string,
+  hash: string;
   files: number;
   comments: number;
   peers: number;
@@ -41,13 +40,13 @@ export function SearchEpisode(
     })
     .accept("json")
     .end((err, res) => {
-      if(err) {
+      if (err) {
         return callback(err);
       }
       let list = [];
       try {
         list = JSON.parse(res.text).list || [];
-      } catch(e) {
+      } catch (e) {
         console.log(e.message);
       }
       callback(null, list);
@@ -56,23 +55,34 @@ export function SearchEpisode(
 
 function download(url, dest, cb) {
   var file = fs.createWriteStream(dest);
-  request.get(url).pipe(file).on("error", err => {
-    fs.unlink(dest); // Delete the file async. (But we don't check the result)
-    cb(err);
-  });
-  file.on('finish', function() {
+  request
+    .get(url)
+    .pipe(file)
+    .on("error", err => {
+      fs.unlink(dest, () => {}); // Delete the file async. (But we don't check the result)
+      cb(err);
+    });
+  file.on("finish", function() {
     file.close();
     cb();
   });
-};
+}
 
-export function startTorrent(torrent: KickAssTorrentInfo, destination: string, callback: (err?) => void) {
-  const torrentFile = path.resolve(`${process.env.appdata}\\utorrent\\${torrent.title}.torrent`);
+export function startTorrent(
+  torrent: KickAssTorrentInfo,
+  destination: string,
+  callback: (err?) => void
+) {
+  const torrentFile = path.resolve(
+    `${process.env.appdata}\\utorrent\\${torrent.title}.torrent`
+  );
   download(torrent.torrentLink, torrentFile, err => {
-    if(err) {
+    if (err) {
       return callback(err);
     }
-    child_process.exec(`${process.env.appdata}\\utorrent\\utorrent.exe /DIRECTORY "${destination}" "${torrentFile}"`);
+    child_process.exec(
+      `${process.env.appdata}\\utorrent\\utorrent.exe /DIRECTORY "${destination}" "${torrentFile}"`
+    );
     callback();
   });
 }

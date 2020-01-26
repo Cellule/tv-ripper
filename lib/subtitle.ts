@@ -1,11 +1,11 @@
-import fs = require("fs");
-import async = require("async");
-import _ = require("lodash");
-import path = require("path");
-import prompt = require("./myprompt");
+import fs from "fs";
+import async from "async";
+import _ from "lodash";
+import path from "path";
+import prompt from "./myprompt";
 
-import SavedInfo = require("./SavedInfo");
-import ripper = require("./ripper");
+import SavedInfo from "./SavedInfo";
+import ripper from "./ripper";
 var subtitles = ripper.subtitles;
 
 export function rip(

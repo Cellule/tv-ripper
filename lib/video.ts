@@ -1,10 +1,10 @@
-import imdb = require("./imdb");
-import async = require("async");
-import prompt = require("./myprompt");
-import SavedInfo = require("./SavedInfo");
-import torrents = require("./torrents");
-import path = require("path");
-import mkdirp = require("mkdirp");
+import imdb from "./imdb";
+import async from "async";
+import prompt from "./myprompt";
+import SavedInfo from "./SavedInfo";
+import torrents from "./torrents";
+import path from "path";
+import mkdirp from "mkdirp";
 
 export function addNewTvShow(name: string, info: SavedInfo, callback: (err) => void) {
   let imdbShow: imdb.ShowSearchRes;

@@ -1,6 +1,6 @@
-import fs = require("fs");
-import path = require("path");
-import mkdirp = require("mkdirp");
+import fs from "fs";
+import path from "path";
+import mkdirp from "mkdirp";
 var beautify = require("js-beautify");
 
 class SavedInfo {

@@ -1,4 +1,4 @@
-var http = require("http");
+import http from "http";
 var cheerio = require("cheerio");
 
 function inspectEpisode(opts: {

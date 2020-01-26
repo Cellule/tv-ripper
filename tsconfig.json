@@ -1,12 +1,11 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "outDir": "built/",
-        "sourceMap": false,
-        "target": "es5",
-        "removeComments": true
-    },
-    "files": [
-        "index.ts"
-    ]
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": "built/",
+    "sourceMap": false,
+    "target": "es2020",
+    "removeComments": true,
+    "esModuleInterop": true
+  },
+  "files": ["index.ts"]
 }

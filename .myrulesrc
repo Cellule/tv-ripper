@@ -1,9 +1,0 @@
-{
-  targets: {
-    global: ["index.ts"]
-  },
-  extraRules: {
-    global: {
-    }
-  }
-}

@@ -5,9 +5,9 @@ import downloadSubtitle from "./downloadSubtitle";
 
 export = {
   subtitles: {
-    searchForShow: searchForShow,
-    inspectShow: inspectShow,
-    inspectEpisode: inspectEpisode,
-    downloadSubtitle: downloadSubtitle
+    searchForShow,
+    inspectShow,
+    inspectEpisode,
+    downloadSubtitle
   }
 }

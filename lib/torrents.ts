@@ -1,7 +1,7 @@
-import request from "superagent";
+import child_process from "child_process";
 import fs from "fs";
 import path from "path";
-import child_process from "child_process";
+import request from "superagent";
 
 function padNumber(n: number) {
   return n < 10 ? "0" + n : n;
@@ -25,32 +25,25 @@ export interface KickAssTorrentInfo {
   verified: number;
 }
 
-export function SearchEpisode(
+export async function SearchEpisode(
   show: string,
   season: number,
-  episode: number,
-  callback: (err, res?: KickAssTorrentInfo[]) => void
-) {
+  episode: number
+): Promise<KickAssTorrentInfo[]> {
   const searchQuery = `${show} S${padNumber(season)}E${padNumber(episode)}`;
   console.log(searchQuery);
-  request
+  const res = await request
     .get("https://kat.cr/json.php")
     .query({
       q: searchQuery
     })
-    .accept("json")
-    .end((err, res) => {
-      if (err) {
-        return callback(err);
-      }
-      let list = [];
-      try {
-        list = JSON.parse(res.text).list || [];
-      } catch (e) {
-        console.log(e.message);
-      }
-      callback(null, list);
-    });
+    .accept("json");
+  try {
+    return JSON.parse(res.text).list || [];
+  } catch (e) {
+    console.log(e.message);
+  }
+  return [];
 }
 
 function download(url, dest, cb) {

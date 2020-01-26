@@ -1,7 +1,6 @@
 import fs from "fs";
-import path from "path";
 import mkdirp from "mkdirp";
-var beautify = require("js-beautify");
+import path from "path";
 
 class SavedInfo {
   data: Ripper.SavedInfoData = { downloaded: {} };
@@ -37,7 +36,7 @@ class SavedInfo {
       mkdirp.sync(this.folder);
     }
     console.log("Saving downloaded subtitles at %s", this.savedInfoPath)
-    fs.writeFileSync(this.savedInfoPath, beautify(JSON.stringify(this.data), {indent_size: 2}));
+    fs.writeFileSync(this.savedInfoPath, JSON.stringify(this.data));
   }
   isSubtitleSaved(lng: string, season: number, episode: number, subId: number) {
     const savedInfo = this.data;

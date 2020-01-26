@@ -3,66 +3,66 @@ var querystring = require("querystring");
 var cheerio = require("cheerio");
 
 // todo:: callback showid
-function searchForShow(
-  opts: {
-    name: string,
-    exactMatch?: boolean
-  },
-  callback: (err, res?: Ripper.searchForShow.res) => void
-) {
-  function dataReceived(body) {
-    var $ = cheerio.load(body);
-    var list = $(".left_articles ul li div a");
-    var shows = list.map(function(i, elem) {
-      return {
-        id: parseInt(/^\/tvshow-(\d+)/.exec(elem.attribs.href)[1]),
-        name: $(elem).text()
+async function searchForShow(opts: {
+  name: string;
+  exactMatch?: boolean;
+}): Promise<Ripper.searchForShow.res> {
+  return new Promise((resolve, reject) => {
+    function dataReceived(body) {
+      var $ = cheerio.load(body);
+      var list = $(".left_articles ul li div a");
+      var shows = list
+        .map(function(i, elem) {
+          return {
+            id: parseInt(/^\/tvshow-(\d+)/.exec(elem.attribs.href)[1]),
+            name: $(elem).text()
+          };
+        })
+        .get();
+      if (opts.exactMatch) {
+        shows = shows.filter(function(show) {
+          return show.name.match(new RegExp("^" + opts.name + " (.*)$", "i"));
+        });
       }
-    }).get();
-    if(opts.exactMatch) {
-      shows = shows.filter(function(show) {
-        return show.name.match(new RegExp("^" + opts.name + " \(.*\)$", "i"));
+      if (shows.length) {
+        resolve({ shows: shows });
+      } else {
+        reject(new Error("No tv show found"));
+      }
+    }
+
+    var postData = querystring.stringify({
+      q: opts.name
+    });
+
+    var options = {
+      hostname: "www.tvsubtitles.net",
+      port: 80,
+      path: "/search.php",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": postData.length
+      }
+    };
+
+    var req = http.request(options, function(res) {
+      var body = "";
+      res.setEncoding("utf8");
+      res.on("data", function(chunk) {
+        body += chunk;
       });
-    }
-    callback(shows.length ? null: new Error("No tv show found"), {
-      shows: shows
+      res.on("end", function() {
+        dataReceived(body);
+      });
     });
-  }
 
-  var postData = querystring.stringify({
-    q: opts.name
+    req.on("error", reject);
+
+    // write data to request body
+    req.write(postData);
+    req.end();
   });
-
-  var options = {
-    hostname: "www.tvsubtitles.net",
-    port: 80,
-    path: "/search.php",
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "Content-Length": postData.length
-    }
-  };
-
-
-  var req = http.request(options, function(res) {
-    var body = "";
-    res.setEncoding("utf8");
-    res.on("data", function (chunk) {
-      body += chunk;
-    });
-    res.on("end", function() {
-      dataReceived(body);
-    });
-  });
-
-  req.on("error", function(e) {
-    callback(e);
-  });
-
-  // write data to request body
-  req.write(postData);
-  req.end();
 }
 
 export = searchForShow;

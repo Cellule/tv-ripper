@@ -7,7 +7,7 @@
     "tv-ripper": "bin/tv-ripper"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf built & tsc",
     "prepublishOnly": "npm run build"
   },
   "author": "",
@@ -15,18 +15,20 @@
   "devDependencies": {
     "@types/lodash": "^4.14.149",
     "@types/node": "^13.5.0",
+    "@types/yargs": "^15.0.1",
+    "rimraf": "^3.0.0",
     "typescript": "^3.7.5"
   },
   "dependencies": {
-    "cheerio": "^0.19.0",
-    "commander": "^2.8.0",
-    "js-beautify": "^1.5.10",
-    "lodash": "^3.7.0",
-    "mkdirp": "^0.5.1",
-    "prompt": "^0.2.14",
+    "cheerio": "^1.0.0-rc.3",
+    "enquirer": "^2.3.4",
+    "lodash": "^4.17.15",
+    "mkdirp": "^1.0.3",
+    "prompt": "^1.0.0",
     "request": "^2.55.0",
     "streamifier": "^0.1.1",
-    "superagent": "^1.4.0",
-    "unzip": "^0.1.11"
+    "superagent": "^5.2.1",
+    "unzip": "^0.1.11",
+    "yargs": "^15.1.0"
   }
 }

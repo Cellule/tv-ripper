@@ -1,6 +1,6 @@
 {
   "name": "tv-ripper",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "description": "",
   "main": "built/index.js",
   "bin": {
@@ -28,7 +28,7 @@
     "request": "^2.55.0",
     "streamifier": "^0.1.1",
     "superagent": "^5.2.1",
-    "unzip": "^0.1.11",
+    "unzip-stream": "^0.3.0",
     "yargs": "^15.1.0"
   }
 }

@@ -93,7 +93,7 @@ async function addNewFolder() {
     console.error("Need to specify show destination");
     process.exit(1);
   }
-  const info = new SavedInfo(argv.args[0]);
+  const info = new SavedInfo(argv._[0]);
   await rip(argv["new-show"], info, argv);
 }
 

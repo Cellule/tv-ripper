@@ -1,6 +1,6 @@
 var request = require("request");
-var unzip = require("unzip");
 var streamifier = require("streamifier");
+import unzip from "unzip-stream";
 
 function downloadSubtitle(opts: { id: number; path: string }): Promise<void> {
   return new Promise((resolve, reject) => {

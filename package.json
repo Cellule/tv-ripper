@@ -1,7 +1,7 @@
 {
   "name": "tv-ripper",
   "version": "3.0.0",
-  "description": "",
+  "description": "Download subtitles for your favorite tv-shows",
   "main": "built/index.js",
   "bin": {
     "tv-ripper": "bin/tv-ripper"
@@ -10,8 +10,8 @@
     "build": "rimraf built & tsc",
     "prepublishOnly": "npm run build"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Michael Ferris",
+  "license": "MIT",
   "devDependencies": {
     "@types/lodash": "^4.14.149",
     "@types/node": "^13.5.0",

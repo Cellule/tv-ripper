@@ -11,19 +11,17 @@ $ npm install tv-ripper -g
 
 ## Usage
 ```
-Usage: tv-ripper [options]
-
-  Options:
-
-    -h, --help            output usage information
-    -V, --version         output the version number
-    -n, --name <tvShow>   tv show name
-    -s, --season <n>      Optional. Season you want to download. Select '0' for latest only. Omit to download all seasons
-    -e, --episode <n>     Optional. Episode you want to download
-    -l, --language <lng>  Required. Subtitle language. Default: English
-    -q, --quiet           won't prompt you when multiple choices available
-    -f, --force           Download already downloaded subtitles as well
-    -r, --no-save         Save information for tv show and downloaded subtitles so far to avoid duplicates
+Options:
+  --help          Show help                                                                                         [boolean]
+  --version       Show version number                                                                               [boolean]
+  --new-show, -n  Add new tv show name to folder passed in args                                                      [string]
+  --season, -s    Season you want to download. Select '0' for latest only. Omit to download all seasons              [number]
+  --episode, -e   Episode you want to download                                                                       [number]
+  --language, -l  Subtitle language                                                             [string] [default: "English"]
+  --quiet, -q     Won't prompt you when multiple choices available                                                  [boolean]
+  --force, -f     Download already downloaded subtitles as well                                                     [boolean]
+  --list          List subfolder with tv-ripper info                                                                [boolean]
+  --save          Save information for tv show and downloaded subtitles so far to avoid duplicates  [boolean] [default: true]
 ```
 Example
 ```

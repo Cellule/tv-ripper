@@ -7,6 +7,7 @@ import { rip } from "./subtitle";
 
 const argv = yargs
   .version("3.0.0")
+  .wrap(Math.min(yargs.terminalWidth(), 125))
   .options({
     "new-show": {
       alias: "n",
